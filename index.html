@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Yapson — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0c0f;--bg2:#111418;--bg3:#1a1e24;--border:#252a32;--border2:#2e3540;--text:#e2e8f0;--text2:#8892a4;--text3:#556070;--accent:#00d4aa;--accent2:#00a884;--orange:#ff6b35;--yellow:#fbbf24;--red:#ef4444;--blue:#3b82f6;--green:#22c55e;--r:8px;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;display:flex}
+button{cursor:pointer;font-family:var(--sans)}input,select,textarea{font-family:var(--sans);font-size:14px}
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
+#login-screen.hidden{display:none}
+.login-box{width:360px;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:32px}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-mark{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:15px;color:#000}
+.login-title{font-family:var(--mono);font-size:15px;font-weight:600}
+.login-sub{font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
+.login-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:10px 12px;border-radius:var(--r);font-size:13px;margin-bottom:16px;display:none}
+#sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+.sb-logo{padding:18px 14px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-mark{width:30px;height:30px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:12px;color:#000}
+.sb-text{font-family:var(--mono);font-size:12px;font-weight:600}.sb-sub{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase}
+.sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.sb-section{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:10px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r);color:var(--text2);font-size:13px;transition:all .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg3);color:var(--text)}.nav-item.active{background:rgba(0,212,170,.1);color:var(--accent)}
+.nav-item svg{width:15px;height:15px;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;font-family:var(--mono);background:var(--orange);color:#fff;padding:1px 6px;border-radius:20px}
+.sb-footer{padding:10px;border-top:1px solid var(--border)}
+.user-card{display:flex;align-items:center;gap:8px;padding:8px;border-radius:var(--r);background:var(--bg3)}
+.user-av{width:26px;height:26px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000;flex-shrink:0}
+.user-name{font-size:12px;font-weight:500}.user-role{font-size:10px;color:var(--text3)}
+.logout-btn{margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;border-radius:4px}.logout-btn:hover{color:var(--red)}
+#main{flex:1;overflow-y:auto;min-height:100vh}
+.page{display:none;padding:24px 28px}.page.active{display:block}
+.page-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
+.page-title{font-size:18px;font-weight:600}.page-sub{font-size:12px;color:var(--text2);margin-top:3px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.c-accent::before{background:var(--accent)}.stat-card.c-orange::before{background:var(--orange)}
+.stat-card.c-green::before{background:var(--green)}.stat-card.c-red::before{background:var(--red)}.stat-card.c-blue::before{background:var(--blue)}
+.stat-label{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.stat-val{font-family:var(--mono);font-size:24px;font-weight:600}.stat-sub{font-size:11px;color:var(--text2);margin-top:4px}
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.tbl-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.tbl-title{font-size:13px;font-weight:500}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:9px 14px;font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg3);font-weight:500}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px}
+tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.015)}
+.mono{font-family:var(--mono);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-family:var(--mono);font-weight:500}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.b-success{background:rgba(34,197,94,.12);color:#4ade80}.b-failed{background:rgba(239,68,68,.12);color:#f87171}
+.b-pending{background:rgba(251,191,36,.12);color:#fbbf24}.b-processing{background:rgba(59,130,246,.12);color:#60a5fa}
+.b-timeout{background:rgba(139,92,246,.12);color:#a78bfa}.b-orange{background:rgba(255,107,53,.12);color:#ff8c69}
+.b-mtn{background:rgba(251,191,36,.12);color:#fbbf24}.b-moov{background:rgba(59,130,246,.12);color:#60a5fa}
+.b-wave{background:rgba(0,212,170,.12);color:var(--accent)}.b-depot{background:rgba(34,197,94,.1);color:#4ade80}
+.b-retrait{background:rgba(239,68,68,.1);color:#f87171}.b-admin{background:rgba(139,92,246,.12);color:#a78bfa}
+.b-user{background:rgba(136,146,164,.12);color:var(--text2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r);font-size:13px;font-weight:500;border:none;transition:all .15s;cursor:pointer}
+.btn-primary{background:var(--accent);color:#000}.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2)}.btn-danger:hover{background:rgba(239,68,68,.22)}
+.btn-sm{padding:5px 10px;font-size:12px}.btn-xs{padding:3px 8px;font-size:11px;font-family:var(--mono)}
+.form-group{margin-bottom:14px}.form-label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 11px;border-radius:var(--r);transition:border-color .15s;outline:none}
+.form-input:focus{border-color:var(--accent)}.form-input::placeholder{color:var(--text3)}
+.form-textarea{min-height:80px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.5}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.form-section{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.form-section-title{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.tog-wrap{display:flex;align-items:center;gap:10px}
+.tog{width:34px;height:19px;background:var(--bg3);border-radius:20px;position:relative;cursor:pointer;border:1px solid var(--border2);transition:background .2s;flex-shrink:0}
+.tog.on{background:var(--accent);border-color:var(--accent)}
+.tog::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:transform .2s}
+.tog.on::after{transform:translateX(15px)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;width:600px;max-width:100%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1}
+.modal-title{font-size:14px;font-weight:600}
+.modal-x{background:none;border:none;color:var(--text2);cursor:pointer;padding:4px;border-radius:4px;font-size:18px;line-height:1}.modal-x:hover{color:var(--red)}
+.modal-body{padding:18px;flex:1}.modal-ft{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border)}
+.op-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.op-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:border-color .15s}
+.op-card:hover{border-color:var(--accent)}
+.op-hd{padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.op-icon{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:var(--mono)}
+.oi-orange{background:rgba(255,107,53,.2);color:#ff6b35}.oi-mtn{background:rgba(251,191,36,.2);color:#fbbf24}
+.oi-moov{background:rgba(59,130,246,.2);color:#3b82f6}.oi-wave{background:rgba(0,212,170,.2);color:var(--accent)}
+.op-name{font-size:13px;font-weight:600}.op-status{margin-left:auto}
+.op-body{padding:12px 14px}
+.op-field{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.op-field:last-child{border-bottom:none}.op-field-label{color:var(--text3)}
+.op-field-val{font-family:var(--mono);color:var(--text2);font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.test-result{padding:10px 12px;border-radius:var(--r);font-size:12px;margin-top:10px;display:none;font-family:var(--mono)}
+.test-ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#4ade80}
+.test-fail{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171}
+.device-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.device-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.device-dot.online{background:var(--green);box-shadow:0 0 6px var(--green)}.device-dot.offline{background:var(--text3)}
+.device-info{flex:1}.device-name{font-size:13px;font-weight:500}.device-id{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.device-token{font-size:10px;color:var(--text3);font-family:var(--mono);background:var(--bg3);padding:3px 7px;border-radius:4px;cursor:pointer;border:1px solid var(--border)}
+.device-token:hover{border-color:var(--accent);color:var(--accent)}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-select{background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--r);font-size:12px;outline:none;cursor:pointer}
+.filter-input{background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:var(--r);font-size:12px;outline:none;width:200px}
+.filter-input::placeholder{color:var(--text3)}
+.pagination{display:flex;align-items:center;gap:8px;padding:12px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)}
+.pagination button{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:5px;cursor:pointer;font-size:12px}
+.pagination button:hover:not(:disabled){background:var(--accent);color:#000;border-color:var(--accent)}
+.pagination button:disabled{opacity:.4;cursor:not-allowed}
+.empty{text-align:center;padding:48px 20px;color:var(--text3)}.empty-title{font-size:14px;color:var(--text2);margin-bottom:6px}.empty-sub{font-size:12px}
+#toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;min-width:280px;animation:slideIn .2s ease}
+.toast.t-ok{border-left:3px solid var(--green)}.toast.t-err{border-left:3px solid var(--red)}.toast.t-info{border-left:3px solid var(--blue)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
+code{background:var(--bg3);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px}
+</style>
+</head>
+<body>
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo"><div class="login-mark">Y</div><div><div class="login-title">Yapson Admin</div><div class="login-sub">Mobile Money</div></div></div>
+    <div class="login-err" id="login-err"></div>
+    <div class="form-group"><label class="form-label">Identifiant</label><input class="form-input" id="login-user" placeholder="admin" autocomplete="username"/></div>
+    <div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" id="login-pass" type="password" autocomplete="current-password"/></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" onclick="doLogin()">Connexion</button>
+  </div>
+</div>
+<div id="sidebar">
+  <div class="sb-logo"><div class="sb-mark">Y</div><div><div class="sb-text">Yapson Admin</div><div class="sb-sub">Mobile Money</div></div></div>
+  <nav class="sb-nav">
+    <div class="sb-section">Principal</div>
+    <button class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>Dashboard</button>
+    <button class="nav-item" onclick="showPage('operations')" data-page="operations"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Opérations<span class="nav-badge" id="pending-badge" style="display:none">0</span></button>
+    <div class="sb-section">Configuration</div>
+    <button class="nav-item" onclick="showPage('operators')" data-page="operators"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>Opérateurs</button>
+    <button class="nav-item" onclick="showPage('devices')" data-page="devices"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a1 1 0 001-1V4a1 1 0 00-1-1H8a1 1 0 00-1 1v16a1 1 0 001 1z"/></svg>Appareils Android</button>
+    <div class="sb-section">Gestion</div>
+    <button class="nav-item" onclick="showPage('users')" data-page="users"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Utilisateurs</button>
+  </nav>
+  <div class="sb-footer"><div class="user-card"><div class="user-av" id="user-av">A</div><div><div class="user-name" id="user-name">Admin</div><div class="user-role">Administrateur</div></div><button class="logout-btn" onclick="doLogout()">✕</button></div></div>
+</div>
+<div id="main">
+  <div class="page active" id="page-dashboard">
+    <div class="page-hd"><div><div class="page-title">Dashboard</div><div class="page-sub"><span class="live-dot"></span> Temps réel</div></div><button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↻ Actualiser</button></div>
+    <div class="stats-grid">
+      <div class="stat-card c-accent"><div class="stat-label">Total opérations</div><div class="stat-val" id="s-total">—</div></div>
+      <div class="stat-card c-green"><div class="stat-label">Succès</div><div class="stat-val" id="s-success">—</div></div>
+      <div class="stat-card c-red"><div class="stat-label">Échecs</div><div class="stat-val" id="s-failed">—</div></div>
+      <div class="stat-card c-orange"><div class="stat-label">En attente</div><div class="stat-val" id="s-pending">—</div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card c-blue" style="grid-column:span 2"><div class="stat-label">Volume total (FCFA)</div><div class="stat-val" id="s-volume">—</div><div class="stat-sub" id="s-vol-today">Aujourd'hui: —</div></div>
+      <div class="stat-card c-accent" style="grid-column:span 2"><div class="stat-label">Opérations aujourd'hui</div><div class="stat-val" id="s-today">—</div></div>
+    </div>
+    <div class="tbl-wrap"><div class="tbl-hd"><span class="tbl-title">Dernières opérations</span></div><table><thead><tr><th>Réf</th><th>Type</th><th>Opérateur</th><th>Montant</th><th>Statut</th><th>Agent</th><th>Date</th></tr></thead><tbody id="recent-ops"></tbody></table></div>
+  </div>
+  <div class="page" id="page-operations">
+    <div class="page-hd"><div><div class="page-title">Opérations</div><div class="page-sub">Historique complet</div></div></div>
+    <div class="filters">
+      <select class="filter-select" id="f-status" onchange="loadOps()"><option value="">Tous statuts</option><option value="PENDING">En attente</option><option value="PROCESSING">En cours</option><option value="SUCCESS">Succès</option><option value="FAILED">Échec</option><option value="TIMEOUT">Timeout</option></select>
+      <select class="filter-select" id="f-operator" onchange="loadOps()"><option value="">Tous opérateurs</option><option value="ORANGE">Orange</option><option value="MTN">MTN</option><option value="MOOV">Moov</option><option value="WAVE">Wave</option></select>
+      <select class="filter-select" id="f-type" onchange="loadOps()"><option value="">Dépôt & Retrait</option><option value="DEPOT">Dépôt</option><option value="RETRAIT">Retrait</option></select>
+      <button class="btn btn-ghost btn-sm" onclick="loadOps()">↻</button>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Réf</th><th>Type</th><th>Opérateur</th><th>Montant</th><th>Téléphone</th><th>Statut</th><th>Agent</th><th>Date</th><th></th></tr></thead><tbody id="ops-body"></tbody></table><div class="pagination" id="ops-pagination"></div></div>
+  </div>
+  <div class="page" id="page-operators">
+    <div class="page-hd"><div><div class="page-title">Opérateurs</div><div class="page-sub">Configuration USSD et patterns</div></div></div>
+    <div class="op-grid" id="op-grid"></div>
+  </div>
+  <div class="page" id="page-devices">
+    <div class="page-hd"><div><div class="page-title">Appareils Android</div><div class="page-sub">Téléphones connectés</div></div><button class="btn btn-primary btn-sm" onclick="openModal('modal-device')">+ Ajouter</button></div>
+    <div id="devices-list"></div>
+  </div>
+  <div class="page" id="page-users">
+    <div class="page-hd"><div><div class="page-title">Utilisateurs</div><div class="page-sub">Comptes agents</div></div><button class="btn btn-primary btn-sm" onclick="openModal('modal-user')">+ Nouvel utilisateur</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Créé le</th><th></th></tr></thead><tbody id="users-body"></tbody></table></div>
+  </div>
+</div>
+
+<!-- Modal Opérateur -->
+<div class="overlay" id="modal-op">
+  <div class="modal" style="width:680px">
+    <div class="modal-hd"><span class="modal-title" id="modal-op-title">Configurer opérateur</span><button class="modal-x" onclick="closeModal('modal-op')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-section">
+        <div class="form-section-title">Général</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Nom</label><input class="form-input" id="op-name"/></div>
+          <div class="form-group"><label class="form-label">Actif</label><div class="tog-wrap" style="margin-top:8px"><div class="tog on" id="op-active-tog" onclick="toggleTog('op-active-tog','op-active')"></div><span style="font-size:13px;color:var(--text2)">Activé</span><input type="hidden" id="op-active" value="true"/></div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Préfixes numéros</label><input class="form-input" id="op-prefixes" placeholder="07,05,01"/></div>
+          <div class="form-group"><label class="form-label">Timeout (secondes)</label><input class="form-input" id="op-timeout" type="number" value="120"/></div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">Codes USSD</div>
+        <div class="form-hint" style="margin-bottom:10px">Placeholders: <code>{numero}</code> <code>{montant}</code> <code>{pin}</code></div>
+        <div class="form-row3">
+          <div class="form-group"><label class="form-label">USSD Dépôt</label><input class="form-input mono" id="op-ussd-depot"/></div>
+          <div class="form-group"><label class="form-label">USSD Retrait</label><input class="form-input mono" id="op-ussd-retrait"/></div>
+          <div class="form-group"><label class="form-label">USSD Solde</label><input class="form-input mono" id="op-ussd-balance"/></div>
+        </div>
+      </div>
+      <div class="form-section" id="sms-section">
+        <div class="form-section-title">Confirmation SMS</div>
+        <div class="form-hint" style="margin-bottom:10px">Regex JS — groupe nommé <code>(?&lt;txid&gt;...)</code> pour capturer l'ID transaction</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Pattern succès — Dépôt</label><input class="form-input mono" id="op-sms-depot"/></div>
+          <div class="form-group"><label class="form-label">Pattern succès — Retrait</label><input class="form-input mono" id="op-sms-retrait"/></div>
+        </div>
+        <div class="form-group"><label class="form-label">Patterns d'échec (1 par ligne)</label><textarea class="form-input form-textarea" id="op-sms-fail"></textarea></div>
+        <div style="margin-top:12px;padding:12px;background:var(--bg3);border-radius:var(--r)">
+          <div class="form-section-title">Tester un pattern</div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Pattern</label><input class="form-input mono" id="test-pattern"/></div><div class="form-group"><label class="form-label">Message test</label><input class="form-input" id="test-msg"/></div></div>
+          <button class="btn btn-ghost btn-sm" onclick="testPattern()">Tester le pattern</button>
+          <div class="test-result" id="test-result"></div>
+        </div>
+      </div>
+      <div class="form-section" id="notif-section">
+        <div class="form-section-title">Confirmation par notification (Wave)</div>
+        <div class="tog-wrap" style="margin-bottom:12px"><div class="tog" id="op-notif-tog" onclick="toggleTog('op-notif-tog','op-notif');toggleNotifFields()"></div><span style="font-size:13px;color:var(--text2)">Utiliser les notifications</span><input type="hidden" id="op-notif" value="false"/></div>
+        <div id="notif-fields" style="display:none">
+          <div class="form-group"><label class="form-label">Package Android de Wave</label><input class="form-input mono" id="op-notif-pkg" placeholder="com.wave.finance"/></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Pattern notif. Dépôt</label><input class="form-input mono" id="op-notif-depot"/></div>
+            <div class="form-group"><label class="form-label">Pattern notif. Retrait</label><input class="form-input mono" id="op-notif-retrait"/></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-op')">Annuler</button><button class="btn btn-primary" onclick="saveOperator()">Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- Modal détail opération -->
+<div class="overlay" id="modal-op-detail">
+  <div class="modal" style="width:640px">
+    <div class="modal-hd"><span class="modal-title">Détail opération</span><button class="modal-x" onclick="closeModal('modal-op-detail')">✕</button></div>
+    <div class="modal-body" id="modal-op-detail-body"></div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-op-detail')">Fermer</button>
+      <button class="btn btn-danger btn-sm" id="btn-mark-failed" onclick="changeOpStatus('FAILED')">Marquer échoué</button>
+      <button class="btn btn-primary btn-sm" id="btn-mark-success" onclick="changeOpStatus('SUCCESS')">Marquer succès</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal appareil -->
+<div class="overlay" id="modal-device">
+  <div class="modal" style="width:460px">
+    <div class="modal-hd"><span class="modal-title">Enregistrer un appareil</span><button class="modal-x" onclick="closeModal('modal-device')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nom</label><input class="form-input" id="dev-name" placeholder="Téléphone Orange 1"/></div>
+      <div class="form-group"><label class="form-label">Device ID (Android ID ou IMEI)</label><input class="form-input mono" id="dev-id"/></div>
+      <div class="form-group"><label class="form-label">Numéro de téléphone (optionnel)</label><input class="form-input" id="dev-phone" placeholder="+225 07 00 00 00 00"/></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-device')">Annuler</button><button class="btn btn-primary" onclick="saveDevice()">Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- Modal utilisateur -->
+<div class="overlay" id="modal-user">
+  <div class="modal" style="width:460px">
+    <div class="modal-hd"><span class="modal-title">Nouvel utilisateur</span><button class="modal-x" onclick="closeModal('modal-user')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nom d'utilisateur</label><input class="form-input" id="usr-name" placeholder="agent01"/></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="usr-email"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Mot de passe</label><input class="form-input" id="usr-pass" type="password"/></div>
+      <div class="form-group"><label class="form-label">Rôle</label><select class="form-input" id="usr-role"><option value="USER">Agent</option><option value="ADMIN">Administrateur</option></select></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-user')">Annuler</button><button class="btn btn-primary" onclick="saveUser()">Créer</button></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const API = window.API_URL || (()=>{const h=window.location.hostname;if(h==='localhost')return'http://localhost:3000';return window.location.origin.replace(/-admin\b/,'-backend');})();
+let TOKEN=localStorage.getItem('yapson_admin_token');
+let currentOp=null,currentOpConfig=null,currentOpPage=1,ws=null;
+
+async function api(method,path,body){
+  const opts={method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN}};
+  if(body)opts.body=JSON.stringify(body);
+  try{const r=await fetch(API+path,opts);if(r.status===401){doLogout();return null;}return r.json();}
+  catch(e){toast('Erreur réseau','err');return null;}
+}
+
+async function doLogin(){
+  const u=document.getElementById('login-user').value.trim();
+  const p=document.getElementById('login-pass').value;
+  if(!u||!p)return showLoginErr('Remplissez tous les champs');
+  try{
+    const r=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d=await r.json();
+    if(!r.ok)return showLoginErr(d.error||'Erreur');
+    if(d.user.role!=='ADMIN')return showLoginErr('Accès réservé aux administrateurs');
+    TOKEN=d.token;localStorage.setItem('yapson_admin_token',TOKEN);localStorage.setItem('yapson_admin_user',JSON.stringify(d.user));
+    document.getElementById('login-screen').classList.add('hidden');initApp(d.user);
+  }catch(e){showLoginErr('Impossible de contacter le serveur');}
+}
+function showLoginErr(m){const e=document.getElementById('login-err');e.textContent=m;e.style.display='block';}
+function doLogout(){TOKEN=null;localStorage.removeItem('yapson_admin_token');if(ws)ws.close();document.getElementById('login-screen').classList.remove('hidden');}
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+function initApp(user){
+  document.getElementById('user-name').textContent=user.username;
+  document.getElementById('user-av').textContent=user.username[0].toUpperCase();
+  loadDashboard();loadOperators();loadDevices();loadUsers();connectWS();
+}
+
+function connectWS(){
+  const url=API.replace('https://','wss://').replace('http://','ws://');
+  try{ws=new WebSocket(url);
+    ws.onopen=()=>ws.send(JSON.stringify({type:'subscribe',room:'operations'}));
+    ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.type==='operation_update'){loadDashboard();if(document.getElementById('page-operations').classList.contains('active'))loadOps();}};
+    ws.onclose=()=>setTimeout(connectWS,4000);
+  }catch(e){}
+}
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelector('[data-page="'+id+'"]').classList.add('active');
+  if(id==='operations')loadOps();
+}
+
+async function loadDashboard(){
+  const d=await api('GET','/api/stats/overview');if(!d)return;
+  document.getElementById('s-total').textContent=d.totals.total.toLocaleString();
+  document.getElementById('s-success').textContent=d.totals.success.toLocaleString();
+  document.getElementById('s-failed').textContent=d.totals.failed.toLocaleString();
+  document.getElementById('s-pending').textContent=d.totals.pending.toLocaleString();
+  document.getElementById('s-volume').textContent=fmt(d.volume.total);
+  document.getElementById('s-vol-today').textContent="Aujourd'hui: "+fmt(d.volume.today);
+  document.getElementById('s-today').textContent=d.totals.today.toLocaleString();
+  const pb=document.getElementById('pending-badge');
+  if(d.totals.pending>0){pb.textContent=d.totals.pending;pb.style.display='';}else pb.style.display='none';
+  document.getElementById('recent-ops').innerHTML=d.recentOperations.map(op=>`
+    <tr onclick="openOpDetail('${op.id}')" style="cursor:pointer">
+      <td class="mono">${op.reference.substring(0,8)}…</td>
+      <td>${bType(op.type)}</td><td>${bOp(op.operator)}</td>
+      <td class="mono">${fmt(op.amount)}</td><td>${bStat(op.status)}</td>
+      <td style="color:var(--text2)">${op.user?.username||'—'}</td>
+      <td style="color:var(--text3);font-size:12px">${fmtD(op.createdAt)}</td>
+    </tr>`).join('');
+}
+
+async function loadOps(){
+  const status=document.getElementById('f-status').value;
+  const operator=document.getElementById('f-operator').value;
+  const type=document.getElementById('f-type').value;
+  let url=`/api/operations?page=${currentOpPage}&limit=20`;
+  if(status)url+='&status='+status;if(operator)url+='&operator='+operator;if(type)url+='&type='+type;
+  const d=await api('GET',url);if(!d)return;
+  const tb=document.getElementById('ops-body');
+  if(!d.operations.length){tb.innerHTML='<tr><td colspan="9"><div class="empty"><div class="empty-title">Aucune opération</div></div></td></tr>';return;}
+  tb.innerHTML=d.operations.map(op=>`
+    <tr onclick="openOpDetail('${op.id}')" style="cursor:pointer">
+      <td class="mono">${op.reference.substring(0,8)}…</td>
+      <td>${bType(op.type)}</td><td>${bOp(op.operator)}</td>
+      <td class="mono">${fmt(op.amount)}</td>
+      <td style="color:var(--text2)">${op.phoneNumber}</td>
+      <td>${bStat(op.status)}</td>
+      <td style="color:var(--text2)">${op.user?.username||'—'}</td>
+      <td style="color:var(--text3);font-size:12px">${fmtD(op.createdAt)}</td>
+      <td><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openOpDetail('${op.id}')">Voir</button></td>
+    </tr>`).join('');
+  const total=Math.ceil(d.total/d.limit)||1;
+  document.getElementById('ops-pagination').innerHTML=`
+    <button onclick="gotoPage(${currentOpPage-1})" ${currentOpPage<=1?'disabled':''}>←</button>
+    <span>Page ${currentOpPage}/${total} — ${d.total} ops</span>
+    <button onclick="gotoPage(${currentOpPage+1})" ${currentOpPage>=total?'disabled':''}>→</button>`;
+}
+function gotoPage(p){currentOpPage=p;loadOps();}
+
+async function openOpDetail(id){
+  const op=await api('GET','/api/operations/'+id);if(!op)return;
+  currentOp=op;
+  document.getElementById('modal-op-detail-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><div class="form-label">Référence</div><div class="mono" style="font-size:11px">${op.reference}</div></div>
+      <div><div class="form-label">Statut</div>${bStat(op.status)}</div>
+      <div><div class="form-label">Type</div>${bType(op.type)}</div>
+      <div><div class="form-label">Opérateur</div>${bOp(op.operator)}</div>
+      <div><div class="form-label">Montant</div><div class="mono" style="font-size:18px;font-weight:600">${fmt(op.amount)}</div></div>
+      <div><div class="form-label">Téléphone</div><div class="mono">${op.phoneNumber}</div></div>
+      <div><div class="form-label">Agent</div>${op.user?.username||'—'}</div>
+      <div><div class="form-label">Date</div>${fmtD(op.createdAt)}</div>
+    </div>
+    ${op.ussdCode?`<div style="margin-bottom:12px"><div class="form-label">Code USSD</div><div class="mono" style="background:var(--bg3);padding:8px;border-radius:var(--r);font-size:12px">${op.ussdCode}</div></div>`:''}
+    ${op.confirmationMessage?`<div style="margin-bottom:12px"><div class="form-label">Message reçu</div><div style="background:var(--bg3);padding:8px;border-radius:var(--r);font-size:12px;font-family:var(--mono)">${op.confirmationMessage}</div></div>`:''}
+    ${op.operatorTransactionId?`<div style="margin-bottom:16px"><div class="form-label">ID Transaction opérateur</div><div class="mono">${op.operatorTransactionId}</div></div>`:''}
+    <div class="form-label" style="margin-bottom:6px">Logs (${op.logs?.length||0})</div>
+    <div style="max-height:180px;overflow-y:auto;background:var(--bg3);border-radius:var(--r);padding:10px">
+      ${(op.logs||[]).map(l=>`<div style="font-size:11px;font-family:var(--mono);padding:3px 0;border-bottom:1px solid var(--border);color:${l.level==='ERROR'?'#f87171':l.level==='WARN'?'#fbbf24':'var(--text2)'}"><span style="color:var(--text3)">${fmtD(l.createdAt)}</span> ${l.message}</div>`).join('')||'<div style="color:var(--text3);font-size:12px">Aucun log</div>'}
+    </div>`;
+  const done=['SUCCESS','FAILED'].includes(op.status);
+  document.getElementById('btn-mark-success').style.display=done?'none':'';
+  document.getElementById('btn-mark-failed').style.display=done?'none':'';
+  openModal('modal-op-detail');
+}
+async function changeOpStatus(status){
+  if(!currentOp)return;
+  const r=await api('PATCH','/api/operations/'+currentOp.id+'/status',{status});
+  if(r?.id){toast('Statut mis à jour','ok');closeModal('modal-op-detail');loadOps();loadDashboard();}
+  else toast(r?.error||'Erreur','err');
+}
+
+async function loadOperators(){
+  const ops=await api('GET','/api/operators');if(!ops)return;
+  document.getElementById('op-grid').innerHTML=ops.map(op=>`
+    <div class="op-card" onclick="editOperator('${op.operator}')">
+      <div class="op-hd">
+        <div class="op-icon oi-${op.operator.toLowerCase()}">${op.operator.substring(0,2)}</div>
+        <div><div class="op-name">${op.name}</div><div style="font-size:11px;color:var(--text3)">${op.operator}</div></div>
+        <div class="op-status">${op.isActive?'<span class="badge b-success">Actif</span>':'<span class="badge b-failed">Inactif</span>'}</div>
+      </div>
+      <div class="op-body">
+        <div class="op-field"><span class="op-field-label">USSD Dépôt</span><span class="op-field-val">${op.ussdDepot||'—'}</span></div>
+        <div class="op-field"><span class="op-field-label">USSD Retrait</span><span class="op-field-val">${op.ussdRetrait||'—'}</span></div>
+        <div class="op-field"><span class="op-field-label">Confirmation</span><span class="op-field-val">${op.usesNotification?'Notification':'SMS'}</span></div>
+        <div class="op-field"><span class="op-field-label">Timeout</span><span class="op-field-val">${op.timeoutSeconds}s</span></div>
+      </div>
+    </div>`).join('');
+}
+
+async function editOperator(operator){
+  const op=await api('GET','/api/operators/'+operator);if(!op)return;
+  currentOpConfig=op;
+  document.getElementById('modal-op-title').textContent='Configurer — '+op.name;
+  document.getElementById('op-name').value=op.name;
+  document.getElementById('op-prefixes').value=op.numberPrefixes||'';
+  document.getElementById('op-timeout').value=op.timeoutSeconds||120;
+  setTog('op-active-tog','op-active',op.isActive);
+  document.getElementById('op-ussd-depot').value=op.ussdDepot||'';
+  document.getElementById('op-ussd-retrait').value=op.ussdRetrait||'';
+  document.getElementById('op-ussd-balance').value=op.ussdBalance||'';
+  document.getElementById('op-sms-depot').value=op.smsSuccessDepot||'';
+  document.getElementById('op-sms-retrait').value=op.smsSuccessRetrait||'';
+  document.getElementById('op-sms-fail').value=op.smsFailurePatterns||'';
+  setTog('op-notif-tog','op-notif',op.usesNotification);
+  document.getElementById('op-notif-pkg').value=op.notifPackageName||'';
+  document.getElementById('op-notif-depot').value=op.notifSuccessDepot||'';
+  document.getElementById('op-notif-retrait').value=op.notifSuccessRetrait||'';
+  document.getElementById('sms-section').style.display=operator==='WAVE'?'none':'';
+  document.getElementById('notif-section').style.display='';
+  document.getElementById('notif-fields').style.display=op.usesNotification?'':'none';
+  openModal('modal-op');
+}
+
+async function saveOperator(){
+  if(!currentOpConfig)return;
+  const r=await api('PUT','/api/operators/'+currentOpConfig.operator,{
+    name:document.getElementById('op-name').value,
+    isActive:document.getElementById('op-active').value==='true',
+    numberPrefixes:document.getElementById('op-prefixes').value,
+    timeoutSeconds:parseInt(document.getElementById('op-timeout').value),
+    ussdDepot:document.getElementById('op-ussd-depot').value,
+    ussdRetrait:document.getElementById('op-ussd-retrait').value,
+    ussdBalance:document.getElementById('op-ussd-balance').value,
+    smsSuccessDepot:document.getElementById('op-sms-depot').value,
+    smsSuccessRetrait:document.getElementById('op-sms-retrait').value,
+    smsFailurePatterns:document.getElementById('op-sms-fail').value,
+    usesNotification:document.getElementById('op-notif').value==='true',
+    notifPackageName:document.getElementById('op-notif-pkg').value,
+    notifSuccessDepot:document.getElementById('op-notif-depot').value,
+    notifSuccessRetrait:document.getElementById('op-notif-retrait').value,
+  });
+  if(r?.id){toast('Opérateur enregistré','ok');closeModal('modal-op');loadOperators();}
+  else toast(r?.error||'Erreur','err');
+}
+
+async function testPattern(){
+  const pattern=document.getElementById('test-pattern').value;
+  const testMessage=document.getElementById('test-msg').value;
+  const r=await api('POST','/api/operators/'+(currentOpConfig?.operator||'ORANGE')+'/test-pattern',{pattern,testMessage});
+  const div=document.getElementById('test-result');div.style.display='block';
+  if(r?.matches){div.className='test-result test-ok';div.textContent='✓ Match! '+(r.groups?'txid: '+JSON.stringify(r.groups):r.captures?.[0]?'capture: '+r.captures[0]:'');}
+  else{div.className='test-result test-fail';div.textContent=r?.error||'✗ Aucune correspondance';}
+}
+function toggleNotifFields(){const on=document.getElementById('op-notif').value==='true';document.getElementById('notif-fields').style.display=on?'':'none';}
+
+async function loadDevices(){
+  const devs=await api('GET','/api/devices');if(!devs)return;
+  const list=document.getElementById('devices-list');
+  if(!devs.length){list.innerHTML='<div class="empty"><div class="empty-title">Aucun appareil</div><div class="empty-sub">Ajoutez un téléphone Android</div></div>';return;}
+  list.innerHTML=devs.map(d=>{
+    const recent=d.lastSeenAt&&(Date.now()-new Date(d.lastSeenAt)<5*60*1000);
+    return`<div class="device-card">
+      <div class="device-dot ${recent?'online':'offline'}"></div>
+      <div class="device-info">
+        <div class="device-name">${d.name}</div>
+        <div class="device-id">${d.deviceId}${d.phoneNumber?' · '+d.phoneNumber:''}</div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--text3)">Token:</span>
+          <span class="device-token" onclick="copyToken('${d.token}')">${d.token.substring(0,20)}…</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <div class="tog ${d.isActive?'on':''}" onclick="toggleDevice('${d.id}',${!d.isActive})"></div>
+        <div style="font-size:11px;color:var(--text3)">${d.lastSeenAt?'Vu '+fmtD(d.lastSeenAt):'Jamais vu'}</div>
+      </div>
+    </div>`;}).join('');
+}
+function copyToken(t){navigator.clipboard.writeText(t).then(()=>toast('Token copié','ok'));}
+async function saveDevice(){
+  const r=await api('POST','/api/devices',{name:document.getElementById('dev-name').value,deviceId:document.getElementById('dev-id').value,phoneNumber:document.getElementById('dev-phone').value});
+  if(r?.id){navigator.clipboard.writeText(r.token).then(()=>{});toast('Appareil créé! Token copié dans le presse-papiers','ok');closeModal('modal-device');loadDevices();}
+  else toast(r?.error||'Erreur','err');
+}
+async function toggleDevice(id,active){await api('PATCH','/api/devices/'+id,{isActive:active});loadDevices();}
+
+async function loadUsers(){
+  const users=await api('GET','/api/stats/users');if(!users)return;
+  document.getElementById('users-body').innerHTML=users.map(u=>`
+    <tr>
+      <td style="font-weight:500">${u.username}</td>
+      <td style="color:var(--text2)">${u.email}</td>
+      <td>${u.role==='ADMIN'?'<span class="badge b-admin">Admin</span>':'<span class="badge b-user">Agent</span>'}</td>
+      <td>${u.isActive?'<span class="badge b-success">Actif</span>':'<span class="badge b-failed">Inactif</span>'}</td>
+      <td style="color:var(--text3);font-size:12px">${fmtD(u.createdAt)}</td>
+      <td><button class="btn btn-ghost btn-xs" onclick="toggleUser('${u.id}',${!u.isActive})">${u.isActive?'Désactiver':'Activer'}</button></td>
+    </tr>`).join('');
+}
+async function saveUser(){
+  const r=await api('POST','/api/stats/users',{username:document.getElementById('usr-name').value,email:document.getElementById('usr-email').value,password:document.getElementById('usr-pass').value,role:document.getElementById('usr-role').value});
+  if(r?.id){toast('Utilisateur créé','ok');closeModal('modal-user');loadUsers();}else toast(r?.error||'Erreur','err');
+}
+async function toggleUser(id,active){await api('PATCH','/api/stats/users/'+id,{isActive:active});loadUsers();toast('Mis à jour','ok');}
+
+function fmt(n){return new Intl.NumberFormat('fr-FR').format(n)+' FCFA';}
+function fmtD(d){return new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function bStat(s){const m={SUCCESS:'b-success Succès',FAILED:'b-failed Échec',PENDING:'b-pending En attente',PROCESSING:'b-processing En cours',TIMEOUT:'b-timeout Timeout'};const[c,l]=(m[s]||'b-user ?').split(' ');return`<span class="badge ${c}">${l}</span>`;}
+function bOp(op){const m={ORANGE:'b-orange Orange',MTN:'b-mtn MTN',MOOV:'b-moov Moov',WAVE:'b-wave Wave'};const[c,l]=(m[op]||'b-user '+op).split(' ');return`<span class="badge ${c}">${l}</span>`;}
+function bType(t){return t==='DEPOT'?'<span class="badge b-depot">Dépôt</span>':'<span class="badge b-retrait">Retrait</span>';}
+function toggleTog(tId,iId){const t=document.getElementById(tId);const i=document.getElementById(iId);const on=i.value!=='true';t.classList.toggle('on',on);i.value=String(on);}
+function setTog(tId,iId,val){document.getElementById(tId).classList.toggle('on',val);document.getElementById(iId).value=String(val);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+function toast(msg,type='info'){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className=`toast t-${type}`;t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),3500);}
+
+if(TOKEN){const u=JSON.parse(localStorage.getItem('yapson_admin_user')||'{}');if(u.id){document.getElementById('login-screen').classList.add('hidden');initApp(u);}}
+</script>
+</body>
+</html>
