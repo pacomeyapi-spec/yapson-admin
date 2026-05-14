@@ -190,7 +190,7 @@ code{background:var(--bg3);padding:1px 5px;border-radius:3px;font-family:var(--m
     <div class="op-grid" id="op-grid"></div>
   </div>
   <div class="page" id="page-devices">
-    <div class="page-hd"><div><div class="page-title">Appareils Android</div><div class="page-sub">Téléphones connectés</div></div><button class="btn btn-primary btn-sm" onclick="openModal('modal-device')">+ Ajouter</button></div>
+    <div class="page-hd"><div><div class="page-title">Appareils Android</div><div class="page-sub">Téléphones connectés</div></div><button class="btn btn-primary btn-sm" onclick="openAddDevice()">+ Ajouter</button></div>
     <div id="devices-list"></div>
   </div>
   <div class="page" id="page-users">
@@ -303,14 +303,36 @@ code{background:var(--bg3);padding:1px 5px;border-radius:3px;font-family:var(--m
 
 <!-- Modal appareil -->
 <div class="overlay" id="modal-device">
-  <div class="modal" style="width:460px">
-    <div class="modal-hd"><span class="modal-title">Enregistrer un appareil</span><button class="modal-x" onclick="closeModal('modal-device')">✕</button></div>
+  <div class="modal" style="width:480px">
+    <div class="modal-hd"><span class="modal-title" id="modal-device-title">Enregistrer un appareil</span><button class="modal-x" onclick="closeModal('modal-device')">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">Nom</label><input class="form-input" id="dev-name" placeholder="Téléphone Orange 1"/></div>
       <div class="form-group"><label class="form-label">Device ID (Android ID ou IMEI)</label><input class="form-input mono" id="dev-id"/></div>
       <div class="form-group"><label class="form-label">Numéro de téléphone (optionnel)</label><input class="form-input" id="dev-phone" placeholder="+225 07 00 00 00 00"/></div>
+      <div class="form-group">
+        <label class="form-label">Opérateurs assignés</label>
+        <div class="form-hint" style="margin-bottom:8px">Cocher les opérateurs que cet appareil doit traiter. Si aucun coché = traite tous les opérateurs.</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="dev-op-orange" value="ORANGE" style="width:16px;height:16px">
+            <span class="badge" style="background:#ff6b1a22;color:#ff6b1a;border:1px solid #ff6b1a44">Orange</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="dev-op-mtn" value="MTN" style="width:16px;height:16px">
+            <span class="badge" style="background:#ffcd0022;color:#ffcd00;border:1px solid #ffcd0044">MTN</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="dev-op-moov" value="MOOV" style="width:16px;height:16px">
+            <span class="badge" style="background:#0055a422;color:#4499ff;border:1px solid #4499ff44">Moov</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="dev-op-wave" value="WAVE" style="width:16px;height:16px">
+            <span class="badge" style="background:#1a9cf022;color:#1a9cf0;border:1px solid #1a9cf044">Wave</span>
+          </label>
+        </div>
+      </div>
     </div>
-    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-device')">Annuler</button><button class="btn btn-primary" onclick="saveDevice()">Enregistrer</button></div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-device')">Annuler</button><button class="btn btn-primary" id="btn-save-device" onclick="saveDevice()">Enregistrer</button></div>
   </div>
 </div>
 
@@ -612,29 +634,69 @@ async function loadDevices(){
   const devs=await api('GET','/api/devices');if(!devs)return;
   const list=document.getElementById('devices-list');
   if(!devs.length){list.innerHTML='<div class="empty"><div class="empty-title">Aucun appareil</div><div class="empty-sub">Ajoutez un téléphone Android</div></div>';return;}
+  const now=Date.now();
+  const colors={'ORANGE':'#ff6b1a','MTN':'#ffcd00','MOOV':'#4499ff','WAVE':'#1a9cf0'};
   list.innerHTML=devs.map(d=>{
-    const recent=d.lastSeenAt&&(Date.now()-new Date(d.lastSeenAt)<5*60*1000);
+    const recent=d.lastSeenAt&&(now-new Date(d.lastSeenAt).getTime())<120000;
+    let ops=[];try{ops=JSON.parse(d.operators||'[]');}catch(e){}
+    const opBadges=ops.length>0
+      ? ops.map(o=>`<span style="font-size:10px;padding:1px 7px;border-radius:4px;background:${colors[o]||'#888'}22;color:${colors[o]||'#888'};border:1px solid ${colors[o]||'#888'}44;font-weight:600">${o}</span>`).join(' ')
+      : '<span style="font-size:10px;color:var(--text3);font-style:italic">Tous opérateurs</span>';
+    const opsEncoded=encodeURIComponent(JSON.stringify(ops));
     return`<div class="device-card">
       <div class="device-dot ${recent?'online':'offline'}"></div>
       <div class="device-info">
         <div class="device-name">${d.name}</div>
         <div class="device-id">${d.deviceId}${d.phoneNumber?' · '+d.phoneNumber:''}</div>
+        <div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">${opBadges}</div>
         <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
           <span style="font-size:11px;color:var(--text3)">Token:</span>
           <span class="device-token" onclick="copyToken('${d.token}')">${d.token.substring(0,20)}…</span>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-        <div class="tog ${d.isActive?'on':''}" onclick="toggleDevice('${d.id}',${!d.isActive})"></div>
         <div style="font-size:11px;color:var(--text3)">${d.lastSeenAt?'Vu '+fmtD(d.lastSeenAt):'Jamais vu'}</div>
+        <button class="btn btn-ghost btn-sm" onclick="editDevice('${d.id}','${d.name}','${d.phoneNumber||''}',decodeURIComponent('${opsEncoded}'))">✏️ Modifier</button>
+        <div class="tog ${d.isActive?'on':''}" onclick="toggleDevice('${d.id}',${!d.isActive})"></div>
       </div>
     </div>`;}).join('');
 }
 function copyToken(t){navigator.clipboard.writeText(t).then(()=>toast('Token copié','ok'));}
+let _currentDeviceId=null;
+function editDevice(id,name,phone,opsJson){
+  _currentDeviceId=id;
+  document.getElementById('modal-device-title').textContent="Modifier l'appareil";
+  document.getElementById('dev-name').value=name;
+  document.getElementById('dev-id').value='';
+  document.getElementById('dev-id').disabled=true;
+  document.getElementById('dev-phone').value=phone;
+  document.getElementById('btn-save-device').textContent='Mettre à jour';
+  let ops=[];try{ops=JSON.parse(opsJson);}catch(e){}
+  ['ORANGE','MTN','MOOV','WAVE'].forEach(op=>{document.getElementById('dev-op-'+op.toLowerCase()).checked=ops.includes(op);});
+  openModal('modal-device');
+}
+function openAddDevice(){
+  _currentDeviceId=null;
+  document.getElementById('modal-device-title').textContent='Enregistrer un appareil';
+  document.getElementById('dev-name').value='';
+  document.getElementById('dev-id').value='';
+  document.getElementById('dev-id').disabled=false;
+  document.getElementById('dev-phone').value='';
+  document.getElementById('btn-save-device').textContent='Enregistrer';
+  ['ORANGE','MTN','MOOV','WAVE'].forEach(op=>{document.getElementById('dev-op-'+op.toLowerCase()).checked=false;});
+  openModal('modal-device');
+}
 async function saveDevice(){
-  const r=await api('POST','/api/devices',{name:document.getElementById('dev-name').value,deviceId:document.getElementById('dev-id').value,phoneNumber:document.getElementById('dev-phone').value});
-  if(r?.id){navigator.clipboard.writeText(r.token).then(()=>{});toast('Appareil créé! Token copié dans le presse-papiers','ok');closeModal('modal-device');loadDevices();}
-  else toast(r?.error||'Erreur','err');
+  const operators=['ORANGE','MTN','MOOV','WAVE'].filter(op=>document.getElementById('dev-op-'+op.toLowerCase()).checked);
+  if(_currentDeviceId){
+    const r=await api('PUT','/api/devices/'+_currentDeviceId,{name:document.getElementById('dev-name').value,phoneNumber:document.getElementById('dev-phone').value,operators:operators.length>0?operators:null});
+    if(r?.id){toast('Appareil mis à jour','ok');closeModal('modal-device');loadDevices();}
+    else toast(r?.error||'Erreur','err');
+  } else {
+    const r=await api('POST','/api/devices',{name:document.getElementById('dev-name').value,deviceId:document.getElementById('dev-id').value,phoneNumber:document.getElementById('dev-phone').value,operators:operators.length>0?operators:null});
+    if(r?.id){navigator.clipboard.writeText(r.token).then(()=>{});toast('Appareil créé! Token copié dans le presse-papiers','ok');closeModal('modal-device');loadDevices();}
+    else toast(r?.error||'Erreur','err');
+  }
 }
 async function toggleDevice(id,active){await api('PATCH','/api/devices/'+id,{isActive:active});loadDevices();}
 
