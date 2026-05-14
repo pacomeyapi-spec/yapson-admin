@@ -90,6 +90,15 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.015
 .op-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .op-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:border-color .15s}
 .op-card:hover{border-color:var(--accent)}
+.ussd-steps-container{display:flex;flex-direction:column;gap:6px;min-height:32px}
+.ussd-step{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px}
+.ussd-step-num{min-width:20px;height:20px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.ussd-step-input{flex:1;background:transparent;border:none;outline:none;font-family:var(--mono);font-size:12px;color:var(--text1)}
+.ussd-step-tag{font-size:10px;padding:2px 6px;border-radius:4px;cursor:pointer;border:none;font-weight:600}
+.ussd-step-del{margin-left:2px;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+.ussd-step-del:hover{color:#ef4444}
+.tag-var{background:#1e3a5f;color:#60a5fa}
+.tag-fixed{background:#1a3a2a;color:#4ade80}
 .op-hd{padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
 .op-icon{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:var(--mono)}
 .oi-orange{background:rgba(255,107,53,.2);color:#ff6b35}.oi-mtn{background:rgba(251,191,36,.2);color:#fbbf24}
@@ -207,12 +216,45 @@ code{background:var(--bg3);padding:1px 5px;border-radius:3px;font-family:var(--m
         </div>
       </div>
       <div class="form-section">
-        <div class="form-section-title">Codes USSD</div>
-        <div class="form-hint" style="margin-bottom:10px">Placeholders: <code>{numero}</code> <code>{montant}</code> <code>{pin}</code></div>
-        <div class="form-row3">
-          <div class="form-group"><label class="form-label">USSD Dépôt</label><input class="form-input mono" id="op-ussd-depot"/></div>
-          <div class="form-group"><label class="form-label">USSD Retrait</label><input class="form-input mono" id="op-ussd-retrait"/></div>
-          <div class="form-group"><label class="form-label">USSD Solde</label><input class="form-input mono" id="op-ussd-balance"/></div>
+        <div class="form-section-title">Code de validation</div>
+        <div class="form-hint" style="margin-bottom:10px">Code PIN/secret de l'agent utilisé comme <code>{CODE}</code> dans les séquences USSD</div>
+        <div class="form-group" style="max-width:220px"><label class="form-label">Code de validation</label><input class="form-input mono" id="op-validation-code" placeholder="ex: 1234" type="password" autocomplete="off"/><div style="margin-top:4px"><label style="font-size:11px;color:var(--text3);cursor:pointer"><input type="checkbox" onchange="document.getElementById('op-validation-code').type=this.checked?'text':'password'" style="margin-right:4px">Afficher</label></div></div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">Séquences USSD</div>
+        <div class="form-hint" style="margin-bottom:12px">
+          Chaque ligne = une étape envoyée séquentiellement. Variables disponibles :
+          <code>{NUMERO}</code> numéro du client &nbsp;|&nbsp;
+          <code>{MONTANT}</code> montant &nbsp;|&nbsp;
+          <code>{CODE}</code> code de validation
+        </div>
+        <div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text3);align-self:center">Insérer variable dans :</span>
+          <span style="font-size:11px;color:var(--text3);align-self:center">Dépôt →</span>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 8px" onclick="insertVar('depot','NUMERO')">{NUMERO}</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 8px" onclick="insertVar('depot','MONTANT')">{MONTANT}</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 8px" onclick="insertVar('depot','CODE')">{CODE}</button>
+          <span style="font-size:11px;color:var(--text3);align-self:center;margin-left:8px">Retrait →</span>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 8px" onclick="insertVar('retrait','NUMERO')">{NUMERO}</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 8px" onclick="insertVar('retrait','MONTANT')">{MONTANT}</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 8px" onclick="insertVar('retrait','CODE')">{CODE}</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div class="form-label" style="margin-bottom:8px">📥 Dépôt — étapes USSD</div>
+            <div id="ussd-steps-depot" class="ussd-steps-container"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:6px;width:100%" onclick="addUssdStep('depot')">+ Ajouter une étape</button>
+          </div>
+          <div>
+            <div class="form-label" style="margin-bottom:8px">📤 Retrait — étapes USSD</div>
+            <div id="ussd-steps-retrait" class="ussd-steps-container"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:6px;width:100%" onclick="addUssdStep('retrait')">+ Ajouter une étape</button>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="form-label" style="margin-bottom:8px">💰 Solde — étapes USSD</div>
+          <div id="ussd-steps-balance" class="ussd-steps-container"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addUssdStep('balance')">+ Ajouter une étape</button>
         </div>
       </div>
       <div class="form-section" id="sms-section">
@@ -426,7 +468,11 @@ async function changeOpStatus(status){
 
 async function loadOperators(){
   const ops=await api('GET','/api/operators');if(!ops)return;
-  document.getElementById('op-grid').innerHTML=ops.map(op=>`
+  document.getElementById('op-grid').innerHTML=ops.map(op=>{
+    let stepsDepot=[];try{stepsDepot=JSON.parse(op.ussdStepsDepot||'[]');}catch(e){}
+    let stepsRetrait=[];try{stepsRetrait=JSON.parse(op.ussdStepsRetrait||'[]');}catch(e){}
+    const stepsInfo=(steps,label)=>steps.length?`<div class="op-field"><span class="op-field-label">${label}</span><span class="op-field-val">${steps.length} étape${steps.length>1?'s':''}</span></div>`:'';
+    return `
     <div class="op-card" onclick="editOperator('${op.operator}')">
       <div class="op-hd">
         <div class="op-icon oi-${op.operator.toLowerCase()}">${op.operator.substring(0,2)}</div>
@@ -434,12 +480,66 @@ async function loadOperators(){
         <div class="op-status">${op.isActive?'<span class="badge b-success">Actif</span>':'<span class="badge b-failed">Inactif</span>'}</div>
       </div>
       <div class="op-body">
-        <div class="op-field"><span class="op-field-label">USSD Dépôt</span><span class="op-field-val">${op.ussdDepot||'—'}</span></div>
-        <div class="op-field"><span class="op-field-label">USSD Retrait</span><span class="op-field-val">${op.ussdRetrait||'—'}</span></div>
+        ${stepsInfo(stepsDepot,'Dépôt USSD')}
+        ${stepsInfo(stepsRetrait,'Retrait USSD')}
         <div class="op-field"><span class="op-field-label">Confirmation</span><span class="op-field-val">${op.usesNotification?'Notification':'SMS'}</span></div>
+        <div class="op-field"><span class="op-field-label">Code validation</span><span class="op-field-val">${op.validationCode?'✓ Configuré':'—'}</span></div>
         <div class="op-field"><span class="op-field-label">Timeout</span><span class="op-field-val">${op.timeoutSeconds}s</span></div>
       </div>
-    </div>`).join('');
+    </div>`}).join('');
+}
+
+// Gestion étapes USSD
+function renderUssdSteps(type, steps){
+  const container=document.getElementById('ussd-steps-'+type);
+  container.innerHTML='';
+  steps.forEach((step,i)=>{
+    const isVar=['NUMERO','MONTANT','CODE'].some(v=>step==='{'+v+'}');
+    const div=document.createElement('div');
+    div.className='ussd-step';
+    div.innerHTML=`<span class="ussd-step-num">${i+1}</span>
+      <input class="ussd-step-input" value="${step}" oninput="updateStepValue('${type}',${i},this.value)" placeholder="ex: *145# ou {NUMERO}" autocomplete="off"/>
+      <span class="ussd-step-tag ${isVar?'tag-var':'tag-fixed'}">${isVar?'VAR':'FIXE'}</span>
+      <button class="ussd-step-del" onclick="removeUssdStep('${type}',${i})">✕</button>`;
+    container.appendChild(div);
+  });
+}
+
+function getSteps(type){
+  const container=document.getElementById('ussd-steps-'+type);
+  return Array.from(container.querySelectorAll('.ussd-step-input')).map(i=>i.value);
+}
+
+function addUssdStep(type){
+  const steps=getSteps(type);
+  steps.push('');
+  renderUssdSteps(type,steps);
+  // Focus sur le dernier input
+  const inputs=document.getElementById('ussd-steps-'+type).querySelectorAll('.ussd-step-input');
+  if(inputs.length) inputs[inputs.length-1].focus();
+}
+
+function removeUssdStep(type,idx){
+  const steps=getSteps(type);
+  steps.splice(idx,1);
+  renderUssdSteps(type,steps);
+}
+
+function updateStepValue(type,idx,val){
+  // Re-render pour mettre à jour le tag VAR/FIXE
+  const steps=getSteps(type);
+  renderUssdSteps(type,steps);
+  // Remettre le focus sur le bon input
+  const inputs=document.getElementById('ussd-steps-'+type).querySelectorAll('.ussd-step-input');
+  if(inputs[idx]) inputs[idx].focus();
+}
+
+// Boutons de variable rapide
+function insertVar(type, varName){
+  const container=document.getElementById('ussd-steps-'+type);
+  const steps=getSteps(type);
+  steps.push('{'+varName+'}');
+  renderUssdSteps(type,steps);
 }
 
 async function editOperator(operator){
@@ -449,10 +549,16 @@ async function editOperator(operator){
   document.getElementById('op-name').value=op.name;
   document.getElementById('op-prefixes').value=op.numberPrefixes||'';
   document.getElementById('op-timeout').value=op.timeoutSeconds||120;
+  document.getElementById('op-validation-code').value=op.validationCode||'';
   setTog('op-active-tog','op-active',op.isActive);
-  document.getElementById('op-ussd-depot').value=op.ussdDepot||'';
-  document.getElementById('op-ussd-retrait').value=op.ussdRetrait||'';
-  document.getElementById('op-ussd-balance').value=op.ussdBalance||'';
+  // Charger les étapes USSD
+  let stepsDepot=[];let stepsRetrait=[];let stepsBalance=[];
+  try{stepsDepot=JSON.parse(op.ussdStepsDepot||'[]');}catch(e){}
+  try{stepsRetrait=JSON.parse(op.ussdStepsRetrait||'[]');}catch(e){}
+  try{stepsBalance=JSON.parse(op.ussdStepsBalance||'[]');}catch(e){}
+  renderUssdSteps('depot',stepsDepot);
+  renderUssdSteps('retrait',stepsRetrait);
+  renderUssdSteps('balance',stepsBalance);
   document.getElementById('op-sms-depot').value=op.smsSuccessDepot||'';
   document.getElementById('op-sms-retrait').value=op.smsSuccessRetrait||'';
   document.getElementById('op-sms-fail').value=op.smsFailurePatterns||'';
@@ -460,7 +566,7 @@ async function editOperator(operator){
   document.getElementById('op-notif-pkg').value=op.notifPackageName||'';
   document.getElementById('op-notif-depot').value=op.notifSuccessDepot||'';
   document.getElementById('op-notif-retrait').value=op.notifSuccessRetrait||'';
-  document.getElementById('sms-section').style.display=operator==='WAVE'?'none':'';
+  document.getElementById('sms-section').style.display=op.usesNotification?'none':'';
   document.getElementById('notif-section').style.display='';
   document.getElementById('notif-fields').style.display=op.usesNotification?'':'none';
   openModal('modal-op');
@@ -468,14 +574,18 @@ async function editOperator(operator){
 
 async function saveOperator(){
   if(!currentOpConfig)return;
+  const stepsDepot=getSteps('depot').filter(s=>s.trim());
+  const stepsRetrait=getSteps('retrait').filter(s=>s.trim());
+  const stepsBalance=getSteps('balance').filter(s=>s.trim());
   const r=await api('PUT','/api/operators/'+currentOpConfig.operator,{
     name:document.getElementById('op-name').value,
     isActive:document.getElementById('op-active').value==='true',
     numberPrefixes:document.getElementById('op-prefixes').value,
     timeoutSeconds:parseInt(document.getElementById('op-timeout').value),
-    ussdDepot:document.getElementById('op-ussd-depot').value,
-    ussdRetrait:document.getElementById('op-ussd-retrait').value,
-    ussdBalance:document.getElementById('op-ussd-balance').value,
+    validationCode:document.getElementById('op-validation-code').value,
+    ussdStepsDepot:stepsDepot,
+    ussdStepsRetrait:stepsRetrait,
+    ussdStepsBalance:stepsBalance,
     smsSuccessDepot:document.getElementById('op-sms-depot').value,
     smsSuccessRetrait:document.getElementById('op-sms-retrait').value,
     smsFailurePatterns:document.getElementById('op-sms-fail').value,
